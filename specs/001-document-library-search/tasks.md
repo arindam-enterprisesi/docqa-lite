@@ -40,9 +40,9 @@ its own increment.
 
 **Purpose**: Confirm the baseline and add shared configuration and test scaffolding.
 
-- [ ] T001 Confirm the baseline: run `uv sync --extra dev`, `make test` and `make lint` and check all pass on the unchanged repo. Do NOT modify dependencies in `pyproject.toml` (plan.md: no new dependencies)
-- [ ] T002 [P] Create `app/config.py` with the constants in data-model.md § Constants (`MAX_UPLOAD_BYTES`, `MAX_DOCUMENTS`, `ALLOWED_EXTENSIONS`, `DEFAULT_K`, `MIN_K`, `MAX_K`, `MAX_QUERY_CHARS`, `SNIPPET_CHARS`, `MAX_FILENAME_CHARS`, `SAMPLE_DOCS_DIR`). Compute `SAMPLE_DOCS_DIR` as `Path(__file__).resolve().parent.parent / "data" / "sample_docs"`
-- [ ] T003 [P] Create `tests/conftest.py` with a function-scoped `client` fixture: `with TestClient(app) as c: yield c` (research.md R7, R9)
+- [X] T001 Confirm the baseline: run `uv sync --extra dev`, `make test` and `make lint` and check all pass on the unchanged repo. Do NOT modify dependencies in `pyproject.toml` (plan.md: no new dependencies) — NOTE: tests pass (2/2); `make lint` fails on 10 pre-existing errors in untracked `.specify/scripts/python/` (not in app/ or tests/)
+- [X] T002 [P] Create `app/config.py` with the constants in data-model.md § Constants (`MAX_UPLOAD_BYTES`, `MAX_DOCUMENTS`, `ALLOWED_EXTENSIONS`, `DEFAULT_K`, `MIN_K`, `MAX_K`, `MAX_QUERY_CHARS`, `SNIPPET_CHARS`, `MAX_FILENAME_CHARS`, `SAMPLE_DOCS_DIR`). Compute `SAMPLE_DOCS_DIR` as `Path(__file__).resolve().parent.parent / "data" / "sample_docs"`
+- [X] T003 [P] Create `tests/conftest.py` with a function-scoped `client` fixture: `with TestClient(app) as c: yield c` (research.md R7, R9)
 
 ---
 
@@ -53,11 +53,11 @@ lifespan that loads the 5 samples. All three stories depend on these.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 [P] Write failing tests for `derive_title(content, filename)` in `tests/test_text.py`: the first `# ` heading is used even when it isn't on the first line; `## Sub` is ignored; `#NoSpace` is ignored; surrounding whitespace is stripped; no heading falls back to the filename stem for `.md`, `.markdown` and `.txt` (research.md R5)
-- [ ] T005 [P] Write failing tests for the `Document` model in `tests/test_models.py`: valid construction; `source` rejects values other than `"sample"`/`"upload"`; the instance is immutable (frozen)
-- [ ] T006 [P] Write failing tests for `InMemoryDocumentRepository` in `tests/test_repository.py`: `add` then `get` returns the same document; `get` of an unknown id returns `None`; `list` keeps insertion order; `count`; `clear`; `add` raises `LibraryFullError` once `count == max_documents` and leaves the count unchanged (construct with `max_documents=3` for the test, default `MAX_DOCUMENTS`)
-- [ ] T007 [P] Write failing tests for `load_sample_documents(directory)` in `tests/test_loader.py` using `tmp_path`: loads only `*.md`, sorted by filename; sets `source="sample"`, a derived title and `size_bytes` equal to the file's byte length; skips a file with invalid UTF-8 and loads the rest; a missing directory returns `[]` without raising; the real `SAMPLE_DOCS_DIR` yields exactly 5 documents
-- [ ] T008 [P] Write failing tests for start-up in `tests/test_app_startup.py`: inside the `client` fixture, `app.state.repository.count() == 5`; two separate `with TestClient(app)` blocks each start with exactly 5 documents (isolation, FR-018); `get_repository` returns `app.state.repository`
+- [X] T004 [P] Write failing tests for `derive_title(content, filename)` in `tests/test_text.py`: the first `# ` heading is used even when it isn't on the first line; `## Sub` is ignored; `#NoSpace` is ignored; surrounding whitespace is stripped; no heading falls back to the filename stem for `.md`, `.markdown` and `.txt` (research.md R5)
+- [X] T005 [P] Write failing tests for the `Document` model in `tests/test_models.py`: valid construction; `source` rejects values other than `"sample"`/`"upload"`; the instance is immutable (frozen)
+- [X] T006 [P] Write failing tests for `InMemoryDocumentRepository` in `tests/test_repository.py`: `add` then `get` returns the same document; `get` of an unknown id returns `None`; `list` keeps insertion order; `count`; `clear`; `add` raises `LibraryFullError` once `count == max_documents` and leaves the count unchanged (construct with `max_documents=3` for the test, default `MAX_DOCUMENTS`)
+- [X] T007 [P] Write failing tests for `load_sample_documents(directory)` in `tests/test_loader.py` using `tmp_path`: loads only `*.md`, sorted by filename; sets `source="sample"`, a derived title and `size_bytes` equal to the file's byte length; skips a file with invalid UTF-8 and loads the rest; a missing directory returns `[]` without raising; the real `SAMPLE_DOCS_DIR` yields exactly 5 documents
+- [X] T008 [P] Write failing tests for start-up in `tests/test_app_startup.py`: inside the `client` fixture, `app.state.repository.count() == 5`; two separate `with TestClient(app)` blocks each start with exactly 5 documents (isolation, FR-018); `get_repository` returns `app.state.repository`
 - [ ] T009 Implement `derive_title(content: str, filename: str) -> str` in `app/text.py` per data-model.md `Document.title` (make T004 pass)
 - [ ] T010 Implement the frozen `Document` pydantic model in `app/models.py` per data-model.md `Document.id`, `Document.title`, `Document.filename`, `Document.size_bytes`, `Document.content`, `Document.source` (make T005 pass)
 - [ ] T011 Implement `LibraryFullError` and a thread-safe `InMemoryDocumentRepository(max_documents: int = MAX_DOCUMENTS)` with `add`, `get`, `list`, `count` and `clear` behind a `threading.Lock` in `app/repository.py` (research.md R1; make T006 pass)
