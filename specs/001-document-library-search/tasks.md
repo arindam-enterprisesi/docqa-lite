@@ -58,11 +58,11 @@ lifespan that loads the 5 samples. All three stories depend on these.
 - [X] T006 [P] Write failing tests for `InMemoryDocumentRepository` in `tests/test_repository.py`: `add` then `get` returns the same document; `get` of an unknown id returns `None`; `list` keeps insertion order; `count`; `clear`; `add` raises `LibraryFullError` once `count == max_documents` and leaves the count unchanged (construct with `max_documents=3` for the test, default `MAX_DOCUMENTS`)
 - [X] T007 [P] Write failing tests for `load_sample_documents(directory)` in `tests/test_loader.py` using `tmp_path`: loads only `*.md`, sorted by filename; sets `source="sample"`, a derived title and `size_bytes` equal to the file's byte length; skips a file with invalid UTF-8 and loads the rest; a missing directory returns `[]` without raising; the real `SAMPLE_DOCS_DIR` yields exactly 5 documents
 - [X] T008 [P] Write failing tests for start-up in `tests/test_app_startup.py`: inside the `client` fixture, `app.state.repository.count() == 5`; two separate `with TestClient(app)` blocks each start with exactly 5 documents (isolation, FR-018); `get_repository` returns `app.state.repository`
-- [ ] T009 Implement `derive_title(content: str, filename: str) -> str` in `app/text.py` per data-model.md `Document.title` (make T004 pass)
-- [ ] T010 Implement the frozen `Document` pydantic model in `app/models.py` per data-model.md `Document.id`, `Document.title`, `Document.filename`, `Document.size_bytes`, `Document.content`, `Document.source` (make T005 pass)
-- [ ] T011 Implement `LibraryFullError` and a thread-safe `InMemoryDocumentRepository(max_documents: int = MAX_DOCUMENTS)` with `add`, `get`, `list`, `count` and `clear` behind a `threading.Lock` in `app/repository.py` (research.md R1; make T006 pass)
-- [ ] T012 Implement `load_sample_documents(directory: Path) -> list[Document]` in `app/loader.py`. Give each document a `uuid4().hex` id per data-model.md `Document.id`, use `source="sample"` per data-model.md `Document.source`, and on a skipped file log a warning that names only the filename (research.md R7; make T007 pass)
-- [ ] T013 Add a `lifespan` async context manager and a `get_repository(request: Request)` dependency to `app/main.py`. The lifespan creates a new `InMemoryDocumentRepository` on `app.state.repository`, loads `SAMPLE_DOCS_DIR` and adds each document. Pass `lifespan=` to the existing `FastAPI(...)` call and keep `GET /` and `GET /health` unchanged (make T008 pass)
+- [X] T009 Implement `derive_title(content: str, filename: str) -> str` in `app/text.py` per data-model.md `Document.title` (make T004 pass)
+- [X] T010 Implement the frozen `Document` pydantic model in `app/models.py` per data-model.md `Document.id`, `Document.title`, `Document.filename`, `Document.size_bytes`, `Document.content`, `Document.source` (make T005 pass)
+- [X] T011 Implement `LibraryFullError` and a thread-safe `InMemoryDocumentRepository(max_documents: int = MAX_DOCUMENTS)` with `add`, `get`, `list`, `count` and `clear` behind a `threading.Lock` in `app/repository.py` (research.md R1; make T006 pass)
+- [X] T012 Implement `load_sample_documents(directory: Path) -> list[Document]` in `app/loader.py`. Give each document a `uuid4().hex` id per data-model.md `Document.id`, use `source="sample"` per data-model.md `Document.source`, and on a skipped file log a warning that names only the filename (research.md R7; make T007 pass)
+- [X] T013 Add a `lifespan` async context manager and a `get_repository(request: Request)` dependency to `app/main.py`. The lifespan creates a new `InMemoryDocumentRepository` on `app.state.repository`, loads `SAMPLE_DOCS_DIR` and adds each document. Pass `lifespan=` to the existing `FastAPI(...)` call and keep `GET /` and `GET /health` unchanged (make T008 pass)
 - [ ] T014 Checkpoint: `make test` and `make lint` pass
 
 **Checkpoint**: The service starts with the 5 sample documents held in memory.
@@ -79,7 +79,7 @@ leave policy first with 0 < score ≤ 1 and a snippet.
 
 ### Tests for User Story 1 ⚠️ (write first, confirm they FAIL)
 
-- [ ] T015 [P] [US1] Write failing unit tests for `SearchIndex.rebuild` / `SearchIndex.search` in `tests/test_search_index.py`:
+- [X] T015 [P] [US1] Write failing unit tests for `SearchIndex.rebuild` / `SearchIndex.search` in `tests/test_search_index.py`:
   - an empty index returns `[]`
   - rebuilding on documents that contain only stop words doesn't raise, and search returns `[]`
   - "reimbursed meals receipt" ranks the expense document first, using the real samples from `load_sample_documents`
@@ -91,15 +91,16 @@ leave policy first with 0 < score ≤ 1 and a snippet.
   - the same input gives the same output twice
   - a second `rebuild` replaces the earlier corpus
   - search over 100 documents of about 1 KB each finishes in under 1 s (SC-003)
-- [ ] T016 [US1] Write failing unit tests for `SearchIndex.snippet(content, query)` in `tests/test_search_index.py`:
+- [X] T016 [US1] Write failing unit tests for `SearchIndex.snippet(content, query)` in `tests/test_search_index.py`:
   - length ≤ 200 in every case, including when ellipses are added
   - centred on the earliest whole-word match, case-insensitive
   - starts with `…` only when it doesn't begin at offset 0, and ends with `…` only when it is cut before the end
   - no match gives the first 200 characters
   - whitespace and newlines are collapsed
   - content shorter than 200 characters is returned whole without ellipses
-- [ ] T017 [P] [US1] Write failing unit tests for `RedactQueryFilter` in `tests/test_logging_filters.py`: a `uvicorn.access`-style record whose args contain path `/search?q=secret+text` comes out as `/search?<redacted>`; a path with no `?` is unchanged; `filter()` always returns `True`; installing the filter twice doesn't add a duplicate
-- [ ] T018 [P] [US1] Write failing API tests in `tests/test_search.py`:
+- [X] T017 [P] [US1] Write failing unit tests for `RedactQueryFilter` in `tests/test_logging_filters.py`: a `uvicorn.access`-style record whose args contain path `/search?q=secret+text` comes out as `/search?<redacted>`; a path with no `?` is unchanged; `filter()` always returns `True`; installing the filter twice doesn't add a duplicate
+- [X] T018 [P] [US1] Write failing API tests in `tests/test_search.py`:
+  - NOTE: `test_query_and_snippets_not_logged` fails because it also reads the test client's own `httpx` request log (contains `?q=`); the service logs no query text. Needs a test fix (filter out `httpx`/`httpcore` records) — pending user approval
   - spec US1 acceptance scenarios 1–4
   - SC-002: parametrise over the 5 samples with a distinctive phrase each (e.g. "multi-factor authentication passwords" → IT Security Policy) and assert that sample ranks first
   - `k=2` returns at most 2 results, sorted by descending score
@@ -111,14 +112,14 @@ leave policy first with 0 < score ≤ 1 and a snippet.
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Add a `SearchResult` dataclass per data-model.md `SearchResult.id`, `SearchResult.title`, `SearchResult.score`, `SearchResult.snippet`, and pydantic `SearchHit` / `SearchResponse` (fields `query`, `k`, `results`) to `app/models.py`
-- [ ] T020 [US1] Implement `SearchIndex` in `app/search.py` per research.md R2 and R3:
+- [X] T019 [US1] Add a `SearchResult` dataclass per data-model.md `SearchResult.id`, `SearchResult.title`, `SearchResult.score`, `SearchResult.snippet`, and pydantic `SearchHit` / `SearchResponse` (fields `query`, `k`, `results`) to `app/models.py`
+- [X] T020 [US1] Implement `SearchIndex` in `app/search.py` per research.md R2 and R3:
   - `rebuild(documents)` fits `TfidfVectorizer(stop_words="english", sublinear_tf=True)` on `title + "\n" + content`; handles an empty list and `ValueError` (empty vocabulary) by marking the index empty; guarded by a `threading.Lock`
   - `search(query, k)` uses `cosine_similarity`, drops scores ≤ 0, sorts by `(-score, id)`, slices to k and rounds per data-model.md `SearchResult.score`
   - make T015 pass
-- [ ] T021 [US1] Implement `SearchIndex.snippet(content, query)` in `app/search.py` per research.md R6. Use the fitted vectorizer's `build_analyzer()` to tokenise, falling back to lower-case `\w+` tokens when the index is empty. Length limit per data-model.md `SearchResult.snippet`. Have `search` fill `snippet` on each result (make T016 pass)
-- [ ] T022 [P] [US1] Implement `RedactQueryFilter(logging.Filter)` and an idempotent `install_query_redaction()` that attaches it to the `uvicorn.access` logger, in `app/logging_filters.py` (research.md R8; make T017 pass)
-- [ ] T023 [US1] Wire search into `app/main.py` (make T018 pass):
+- [X] T021 [US1] Implement `SearchIndex.snippet(content, query)` in `app/search.py` per research.md R6. Use the fitted vectorizer's `build_analyzer()` to tokenise, falling back to lower-case `\w+` tokens when the index is empty. Length limit per data-model.md `SearchResult.snippet`. Have `search` fill `snippet` on each result (make T016 pass)
+- [X] T022 [P] [US1] Implement `RedactQueryFilter(logging.Filter)` and an idempotent `install_query_redaction()` that attaches it to the `uvicorn.access` logger, in `app/logging_filters.py` (research.md R8; make T017 pass)
+- [X] T023 [US1] Wire search into `app/main.py` (make T018 pass):
   - in `lifespan`, create `SearchIndex` on `app.state.index`, call `rebuild(repository.list())` after the samples load, and call `install_query_redaction()`
   - add a `get_index` dependency
   - add `GET /search` returning `SearchResponse`, with `q: str = Query(..., max_length=MAX_QUERY_CHARS)` per data-model.md `SearchQuery.q` plus an explicit 422 `"Query must not be blank"` when `q.strip()` is empty, and `k: int = Query(DEFAULT_K, ge=MIN_K, le=MAX_K)` per data-model.md `SearchQuery.k`
@@ -144,11 +145,11 @@ The upload validation can be built and tested without it.
 
 ### Tests for User Story 2 ⚠️ (write first, confirm they FAIL)
 
-- [ ] T025 [P] [US2] Add failing unit tests to `tests/test_text.py`:
+- [X] T025 [P] [US2] Add failing unit tests (written to new file `tests/test_upload_helpers.py` so existing tests stay unmodified):
   - `safe_filename`: `../../etc/passwd.md` → `passwd.md`; `a\\b\\c.txt` → `c.txt`; cut to 255 characters; empty or whitespace input → `""`
   - `has_allowed_extension`: `.md`, `.MD`, `.markdown` and `.txt` → True; `.pdf`, `.md.pdf`, no extension and `""` → False
   - `decode_utf8`: valid bytes → str; `b"\xff\xfe"` → raises `ValueError`
-- [ ] T026 [P] [US2] Write failing API tests for upload in `tests/test_documents.py`:
+- [X] T026 [P] [US2] Write failing API tests for upload in `tests/test_documents.py`:
   - spec US2 acceptance scenarios 1–6
   - 201 body has exactly `id`, `title`, `filename` and `size_bytes`
   - title comes from the H1, otherwise from the filename stem
@@ -167,9 +168,9 @@ The upload validation can be built and tested without it.
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Implement `safe_filename`, `has_allowed_extension` and `decode_utf8` in `app/text.py` per research.md R5 and data-model.md `Document.filename` and `Document.content` (make T025 pass)
-- [ ] T028 [US2] Add the pydantic `DocumentSummary` model (`id`, `title`, `filename`, `size_bytes`) to `app/models.py`, with fields matching data-model.md `Document.id`, `Document.title`, `Document.filename`, `Document.size_bytes`
-- [ ] T029 [US2] Implement `POST /documents` (status 201, `response_model=DocumentSummary`, `file: UploadFile`) in `app/main.py` (make T026 pass):
+- [X] T027 [US2] Implement `safe_filename`, `has_allowed_extension` and `decode_utf8` in `app/text.py` per research.md R5 and data-model.md `Document.filename` and `Document.content` (make T025 pass)
+- [X] T028 [US2] Add the pydantic `DocumentSummary` model (`id`, `title`, `filename`, `size_bytes`) to `app/models.py`, with fields matching data-model.md `Document.id`, `Document.title`, `Document.filename`, `Document.size_bytes`
+- [X] T029 [US2] Implement `POST /documents` (status 201, `response_model=DocumentSummary`, `file: UploadFile`) in `app/main.py` (make T026 pass):
   - check in the order given in research.md R4 and contracts/http-api.md: extension → read at most `MAX_UPLOAD_BYTES + 1` bytes → size → empty → UTF-8 → build `Document` with `source="upload"` → `repository.add`
   - set `size_bytes` from the raw byte length per data-model.md `Document.size_bytes`
   - map `LibraryFullError` to 409
@@ -192,7 +193,7 @@ Fetching one returns its full content.
 
 ### Tests for User Story 3 ⚠️ (write first, confirm they FAIL)
 
-- [ ] T031 [US3] Add failing API tests for list and get to `tests/test_documents.py`:
+- [X] T031 [US3] Add failing API tests for list and get to `tests/test_documents.py`:
   - spec US3 acceptance scenarios 1–4
   - list body is `{"documents": [...], "count": 5}`, with filenames in sorted order and no `content` key in any item
   - fetching each listed id returns `content` equal to the matching file in `data/sample_docs/` read as UTF-8
@@ -201,8 +202,8 @@ Fetching one returns its full content.
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Add the pydantic models `DocumentDetail` (the `DocumentSummary` fields plus `content` per data-model.md `Document.content`) and `DocumentList` (`documents`, `count`) to `app/models.py`. If US2 isn't done yet, add `DocumentSummary` here instead
-- [ ] T033 [US3] Implement `GET /documents` (returns `DocumentList`) and `GET /documents/{document_id}` (returns `DocumentDetail`, or 404 `"Document not found"`) in `app/main.py`, using `get_repository` (make T031 pass)
+- [X] T032 [US3] Add the pydantic models `DocumentDetail` (the `DocumentSummary` fields plus `content` per data-model.md `Document.content`) and `DocumentList` (`documents`, `count`) to `app/models.py`. If US2 isn't done yet, add `DocumentSummary` here instead
+- [X] T033 [US3] Implement `GET /documents` (returns `DocumentList`) and `GET /documents/{document_id}` (returns `DocumentDetail`, or 404 `"Document not found"`) in `app/main.py`, using `get_repository` (make T031 pass)
 - [ ] T034 [US3] Checkpoint: `make test` and `make lint` pass
 
 **Checkpoint**: All three user stories work.
