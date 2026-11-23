@@ -38,6 +38,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Library already holds the maximum of 1,000 documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "422":
           description: Missing file, empty file, or content not valid UTF-8
     get:

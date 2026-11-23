@@ -130,3 +130,31 @@ def test_get_unknown_document_is_404(client):
     response = client.get("/documents/does-not-exist")
     assert response.status_code == 404
     assert isinstance(response.json()["detail"], str)
+
+
+# --- library size cap -----------------------------------------------------------------------
+
+
+def test_upload_past_document_cap_is_409_and_library_unchanged(client, monkeypatch):
+    monkeypatch.setattr("app.main.MAX_DOCUMENTS", 7)
+    assert upload(client, "a.md", b"# A\nalpha").status_code == 201
+    assert upload(client, "b.md", b"# B\nbravo").status_code == 201
+    before = client.get("/search", params={"q": "alpha"}).json()
+    response = upload(client, "c.md", b"# C\ncharlie")
+    assert response.status_code == 409
+    assert "7" in response.json()["detail"]
+    assert count(client) == 7
+    assert client.get("/search", params={"q": "alpha"}).json() == before
+    assert client.get("/search", params={"q": "charlie"}).json()["results"] == []
+
+
+def test_upload_exactly_at_cap_is_accepted(client, monkeypatch):
+    monkeypatch.setattr("app.main.MAX_DOCUMENTS", 6)
+    assert upload(client, "a.md", b"# A\nalpha").status_code == 201
+    assert count(client) == 6
+
+
+def test_default_document_cap_is_1000():
+    from app.ingest import MAX_DOCUMENTS
+
+    assert MAX_DOCUMENTS == 1000

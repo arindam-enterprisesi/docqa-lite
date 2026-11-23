@@ -11,6 +11,7 @@ logger = logging.getLogger("docqa")
 
 MAX_TITLE_CHARS = 200
 MAX_BYTES = 1_048_576
+MAX_DOCUMENTS = 1000  # every upload rebuilds the whole index, so the library size is bounded
 MAX_FILENAME_CHARS = 255
 ALLOWED_EXTENSIONS = (".md", ".markdown", ".txt")
 _SAMPLE_EXTENSIONS = (".md", ".markdown")

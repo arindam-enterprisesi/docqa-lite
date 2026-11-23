@@ -10,6 +10,7 @@ from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
 from app import __version__
 from app.ingest import (
     MAX_BYTES,
+    MAX_DOCUMENTS,
     UploadRejected,
     check_extension,
     decode_upload,
@@ -57,7 +58,10 @@ def create_app(sample_dir: Path | None = DEFAULT_SAMPLE_DIR) -> FastAPI:
 
     @app.post("/documents", status_code=201, response_model=DocumentSummary)
     def upload_document(request: Request, file: Annotated[UploadFile, File()]) -> DocumentSummary:
-        """Upload a .md, .markdown or .txt file (UTF-8, at most 1 MB); it is searchable at once."""
+        """Upload a .md, .markdown or .txt file (UTF-8, at most 1 MB); it is searchable at once.
+
+        Rejected with 409 once the library holds the maximum number of documents.
+        """
         filename = sanitize_filename(file.filename or "")
         try:
             check_extension(filename)
@@ -75,6 +79,10 @@ def create_app(sample_dir: Path | None = DEFAULT_SAMPLE_DIR) -> FastAPI:
         )
         state = request.app.state
         with state.lock:
+            if len(state.repository.list()) >= MAX_DOCUMENTS:
+                raise HTTPException(
+                    409, f"Library is full; the maximum is {MAX_DOCUMENTS} documents"
+                )
             state.repository.add(doc)
             state.index.rebuild(state.repository.list())
         logger.info("document_added id=%s filename=%s size=%d", doc.id, doc.filename, doc.size)
