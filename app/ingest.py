@@ -13,6 +13,7 @@ MAX_TITLE_CHARS = 200
 MAX_BYTES = 1_048_576
 MAX_FILENAME_CHARS = 255
 ALLOWED_EXTENSIONS = (".md", ".markdown", ".txt")
+_SAMPLE_EXTENSIONS = (".md", ".markdown")
 _HEADING_RE = re.compile(r"^#[ \t]+(.*?)\s*$")
 
 
@@ -74,16 +75,30 @@ def decode_upload(data: bytes) -> str:
 
 
 def load_sample_dir(path: Path | None) -> list[Document]:
-    """Load every ``*.md`` file in ``path`` (sorted by name). Unreadable files are skipped."""
+    """Load every ``.md``/``.markdown`` file in ``path`` (sorted by name).
+
+    Samples pass the same size/UTF-8/non-empty gate as uploads; a failing file is skipped and
+    logged by filename only.
+    """
     if path is None or not path.is_dir():
         return []
     docs: list[Document] = []
-    for file in sorted(path.glob("*.md")):
+    files = (f for f in path.iterdir() if f.suffix.lower() in _SAMPLE_EXTENSIONS and f.is_file())
+    for file in sorted(files, key=lambda f: f.name):
         try:
-            raw = file.read_bytes()
-            content = raw.decode("utf-8").removeprefix("﻿")
-        except (OSError, UnicodeDecodeError) as exc:
+            with file.open("rb") as handle:
+                raw = handle.read(MAX_BYTES + 1)  # bounded: an oversize sample is never fully read
+            content = decode_upload(raw)
+        except OSError as exc:
             logger.warning("sample_skipped filename=%s error=%s", file.name, type(exc).__name__)
+            continue
+        except UploadRejected as exc:
+            logger.warning(
+                "sample_skipped filename=%s status=%d reason=%r",
+                file.name,
+                exc.status_code,
+                exc.detail,
+            )
             continue
         docs.append(
             Document(

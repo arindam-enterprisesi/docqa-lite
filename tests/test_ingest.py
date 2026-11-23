@@ -75,6 +75,33 @@ def test_load_sample_dir_ignores_non_markdown_files(make_sample_dir):
     assert [d.filename for d in load_sample_dir(directory)] == ["a.md"]
 
 
+def test_load_sample_dir_loads_markdown_extension_sorted_with_md(make_sample_dir):
+    directory = make_sample_dir(
+        {"b.markdown": b"# B\ntext", "a.md": b"# A\ntext", "c.MARKDOWN": b"# C\ntext"}
+    )
+    assert [d.filename for d in load_sample_dir(directory)] == ["a.md", "b.markdown", "c.MARKDOWN"]
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [b"", b"  \n\t ", b"x" * (MAX_BYTES + 1), b"\xff\xfeTOPSECRET-CONTENT"],
+    ids=["empty", "blank", "too-large", "non-utf8"],
+)
+def test_load_sample_dir_skips_samples_failing_the_admission_gate(make_sample_dir, caplog, bad):
+    directory = make_sample_dir({"bad.md": bad, "good.markdown": b"# Good\nfine text"})
+    with caplog.at_level(logging.DEBUG):
+        docs = load_sample_dir(directory)
+    assert [d.filename for d in docs] == ["good.markdown"]
+    messages = " ".join(r.getMessage() for r in caplog.records)
+    assert "bad.md" in messages
+    assert "TOPSECRET" not in messages
+
+
+def test_load_sample_dir_accepts_sample_of_exactly_max_bytes(make_sample_dir):
+    directory = make_sample_dir({"edge.md": b"x" * MAX_BYTES})
+    assert [d.size for d in load_sample_dir(directory)] == [MAX_BYTES]
+
+
 def test_load_sample_dir_missing_directory_returns_empty(tmp_path):
     assert load_sample_dir(tmp_path / "nope") == []
 
