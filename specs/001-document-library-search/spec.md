@@ -106,8 +106,9 @@ appear; fetch one by id and confirm its full content is returned.
   base name and never affect where or how anything is stored.
 - A file exactly 1 MB (1,048,576 bytes) is accepted; one byte more is rejected.
 - Two documents with equal scores are returned in a stable, repeatable order.
-- If a sample document cannot be read at start-up, the service still starts with the remaining
-  documents and records which file was skipped (by name only, never its contents).
+- If a sample document cannot be read at start-up, is empty, is over 1,048,576 bytes, or is not
+  valid UTF-8, the service still starts with the remaining documents and records which file was
+  skipped (by name only, never its contents).
 
 ## Requirements *(mandatory)*
 
@@ -115,8 +116,8 @@ appear; fetch one by id and confirm its full content is returned.
 
 **Start-up**
 
-- **FR-001**: System MUST automatically load every Markdown file in the sample documents folder
-  (currently five) into the library at start-up, so they are listable and searchable without any
+- **FR-001**: System MUST automatically load every Markdown file (`.md` or `.markdown`) in the sample
+  documents folder (currently five) into the library at start-up, so they are listable and searchable without any
   user action.
 
 **Upload**

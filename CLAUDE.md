@@ -33,7 +33,7 @@ Ruff: line length 100, target py311, rules `E F I B UP` (includes import sorting
 ## Structure
 
 - `app/main.py` — `create_app(sample_dir)` factory plus module-level `app = create_app()`. A lifespan
-  handler loads `data/sample_docs/*.md` into the repository and builds the search index on
+  handler loads `data/sample_docs/*.md` and `*.markdown` into the repository and builds the search index on
   `app.state` (`repository`, `index`, `lock`). Endpoints: `GET /`, `GET /health`,
   `POST /documents` (multipart `file`), `GET /documents`, `GET /documents/{id}`, `GET /search?q=&k=`.
 - `app/repository.py` — frozen `Document` dataclass, `DocumentRepository` Protocol,
