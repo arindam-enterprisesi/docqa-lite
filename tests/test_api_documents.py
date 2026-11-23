@@ -132,6 +132,38 @@ def test_get_unknown_document_is_404(client):
     assert isinstance(response.json()["detail"], str)
 
 
+def test_upload_markdown_extension_is_201_with_heading_title(client):
+    response = upload(client, "guide.markdown", b"# Guide Title\nbody text here")
+    assert response.status_code == 201
+    assert response.json()["title"] == "Guide Title"
+    assert response.json()["filename"] == "guide.markdown"
+
+
+def ranked_ids(client, q: str) -> list[str]:
+    return [hit["id"] for hit in client.get("/search", params={"q": q}).json()["results"]]
+
+
+def test_upload_with_no_indexable_terms_is_201_and_does_not_disturb_search(client):
+    before = ranked_ids(client, "annual leave")
+    response = upload(client, "stop.txt", b"the and of to a in it is")
+    assert response.status_code == 201
+    assert response.json()["title"] == "stop"
+    assert count(client) == 6
+    assert (
+        ranked_ids(client, "annual leave") == before
+    )  # scores shift with corpus size, ranking not
+
+
+def test_stop_word_only_upload_into_empty_library_is_201_and_search_returns_empty(
+    make_client, make_sample_dir
+):
+    c = make_client(sample_dir=make_sample_dir({}))
+    assert upload(c, "stop.txt", b"the and of to a in it is").status_code == 201
+    response = c.get("/search", params={"q": "anything"})
+    assert response.status_code == 200
+    assert response.json()["results"] == []
+
+
 # --- library size cap -----------------------------------------------------------------------
 
 
