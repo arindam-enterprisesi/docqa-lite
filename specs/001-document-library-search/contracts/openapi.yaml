@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: docqa-lite — document library
+  version: 0.1.0
+  description: >
+    Contract for feature 001-document-library-search. Existing endpoints GET / and GET /health
+    are unchanged and omitted. Error bodies use FastAPI's default {"detail": ...} shape.
+paths:
+  /documents:
+    post:
+      summary: Upload a Markdown or plain-text document
+      operationId: uploadDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: .md, .markdown or .txt; UTF-8; 1 byte to 1,048,576 bytes
+      responses:
+        "201":
+          description: Document stored and indexed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentSummary" }
+        "413":
+          description: File larger than 1 MB
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "415":
+          description: File extension not accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Library already holds the maximum of 1,000 documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: Missing file, empty file, or content not valid UTF-8
+    get:
+      summary: List all documents (metadata only)
+      operationId: listDocuments
+      responses:
+        "200":
+          description: All documents in insertion order (samples first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DocumentSummary" }
+  /documents/{document_id}:
+    get:
+      summary: Fetch one document with full content
+      operationId: getDocument
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema: { type: string, maxLength: 64 }
+      responses:
+        "200":
+          description: The document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "404":
+          description: No document with this id
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /search:
+    get:
+      summary: Rank documents by TF-IDF relevance to a text query
+      operationId: searchDocuments
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 500 }
+          description: Must contain at least one non-whitespace character
+        - name: k
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 20, default: 5 }
+      responses:
+        "200":
+          description: Up to k hits with score > 0, highest score first (may be empty)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResponse" }
+        "422":
+          description: Invalid q or k
+components:
+  schemas:
+    DocumentSummary:
+      type: object
+      required: [id, title, filename, size, source]
+      properties:
+        id: { type: string, example: "3f2a9c0e8b1d4e6fa7c5b2d1e0f9a8b7" }
+        title: { type: string, example: "Annual Leave Policy" }
+        filename: { type: string, example: "leave-policy.md" }
+        size: { type: integer, minimum: 1, maximum: 1048576, example: 741 }
+        source: { type: string, enum: [sample, upload] }
+    Document:
+      allOf:
+        - $ref: "#/components/schemas/DocumentSummary"
+        - type: object
+          required: [content]
+          properties:
+            content: { type: string }
+    SearchHit:
+      type: object
+      required: [id, title, score, snippet]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        score: { type: number, exclusiveMinimum: 0, maximum: 1, example: 0.436 }
+        snippet: { type: string, maxLength: 200 }
+    SearchResponse:
+      type: object
+      required: [query, k, results]
+      properties:
+        query: { type: string, description: The query as received, whitespace-trimmed }
+        k: { type: integer }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/SearchHit" }
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: { type: string }
